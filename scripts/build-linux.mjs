@@ -26,7 +26,7 @@ if (!existsSync(iconSet)) {
 }
 
 const builder = join(root, 'node_modules', '.bin', 'electron-builder')
-const result = spawnSync(builder, ['--linux'], {
+const result = spawnSync(builder, ['--linux', '--publish', 'never'], {
   cwd: root,
   env: {
     ...process.env,
