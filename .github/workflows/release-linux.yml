@@ -72,6 +72,13 @@ jobs:
       - name: Build Linux packages
         run: pnpm run dist:linux
 
+      - name: Configure Electron sandbox
+        shell: bash
+        run: |
+          electron_directory=$(dirname "$(node -e "console.log(require('electron'))")")
+          sudo chown root:root "${electron_directory}/chrome-sandbox"
+          sudo chmod 4755 "${electron_directory}/chrome-sandbox"
+
       - name: Run packaged runtime smoke test
         run: xvfb-run --auto-servernum pnpm run smoke:app:linux
 
