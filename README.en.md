@@ -275,8 +275,12 @@ The bundled Node runtime defaults to the build machine's platform. Set
 `DSH_DESKTOP_NODE_PLATFORM` (`linux`/`darwin`) and `DSH_DESKTOP_NODE_ARCH`
 (`x64`/`arm64`) to stage a different target for cross-packaging.
 
-The repository does not currently rely on GitHub Actions for release builds.
-Verify locally before upload:
+Pushing a `v*` tag that matches the `package.json` version runs the Linux
+release workflow on Ubuntu x64. It performs type checking, tests, the complete
+package build, and the packaged-runtime smoke test, then verifies the AppImage
+and deb and uploads them with `SHA256SUMS-linux.txt` to the matching GitHub
+Release. macOS release packages are still built locally. Verify before a
+manual upload:
 
 ```sh
 pnpm run typecheck

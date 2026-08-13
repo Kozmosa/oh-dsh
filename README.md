@@ -263,7 +263,10 @@ release/
 `DSH_DESKTOP_NODE_PLATFORM`（`linux`/`darwin`）与 `DSH_DESKTOP_NODE_ARCH`
 （`x64`/`arm64`）。
 
-仓库当前不依赖 GitHub Actions 生成发行包。上传前在本机验证：
+推送与 `package.json` 版本一致的 `v*` tag 后，Linux release workflow 会在
+Ubuntu x64 上执行 typecheck、测试、完整打包和 packaged-runtime smoke，验证
+AppImage / deb 后将它们与 `SHA256SUMS-linux.txt` 上传到对应 GitHub Release。
+macOS 发行包仍需在本机生成。手动上传前验证：
 
 ```sh
 pnpm run typecheck
