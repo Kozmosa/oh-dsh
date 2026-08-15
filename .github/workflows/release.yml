@@ -110,6 +110,10 @@ jobs:
             echo "Windows signing: unsigned fallback; automatic updates are unsupported." >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      - name: Install xvfb
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
       - name: Package signed macOS desktop distribution
         if: runner.os == 'macOS' && env.DSH_DESKTOP_SIGNING == 'enabled'
         env:
@@ -133,7 +137,12 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: pnpm run ${{ matrix.dist_script }}
 
+      - name: Package Oh-DSH-Web distribution (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a node scripts/build-web.mjs
+
       - name: Package Oh-DSH-Web distribution
+        if: runner.os != 'Linux'
         run: node scripts/build-web.mjs
 
       - name: Package Oh-DSH TUI distribution

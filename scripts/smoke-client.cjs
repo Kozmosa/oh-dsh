@@ -156,12 +156,28 @@ void app.whenReady().then(async () => {
                 window.__OH_DSH_SMOKE_WORKSPACE_REQUESTED_AT__ = Date.now()
                 window.__OH_DSH_SMOKE_WORKSPACE_REQUEST_COUNT__ =
                   (window.__OH_DSH_SMOKE_WORKSPACE_REQUEST_COUNT__ ?? 0) + 1
-                const card = workspaceTrigger.closest('[data-composer-card]')
-                card?.dispatchEvent(new PointerEvent('pointerdown', {
+                workspaceTrigger.focus()
+                workspaceTrigger.dispatchEvent(new PointerEvent('pointerdown', {
                   bubbles: true,
                   cancelable: true,
+                  pointerType: 'mouse',
                 }))
-                card?.click()
+                workspaceTrigger.dispatchEvent(new MouseEvent('mousedown', {
+                  bubbles: true,
+                  cancelable: true,
+                  view: window,
+                }))
+                workspaceTrigger.dispatchEvent(new PointerEvent('pointerup', {
+                  bubbles: true,
+                  cancelable: true,
+                  pointerType: 'mouse',
+                }))
+                workspaceTrigger.dispatchEvent(new MouseEvent('mouseup', {
+                  bubbles: true,
+                  cancelable: true,
+                  view: window,
+                }))
+                workspaceTrigger.click()
               }
               const directoryDialog = [...document.querySelectorAll('[role="dialog"]')]
                 .find(dialog => /^(Select Workspace Directory|选择工作区目录)$/i.test(
