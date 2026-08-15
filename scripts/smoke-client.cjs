@@ -44,6 +44,7 @@ void app.whenReady().then(async () => {
   const startedAt = Date.now()
   let navigationReadyAt = null
   let settled = false
+  let lastWorkspaceInputAt = 0
 
   const settle = error => {
     if (settled) return
@@ -147,12 +148,45 @@ void app.whenReady().then(async () => {
               window.__OH_DSH_SMOKE_VISION_REQUESTED__ = true
               textarea.dispatchEvent(paste)
             } else {
+              const workspaceButton = [...document.querySelectorAll(
+                'button[aria-label="Choose workspace"], '
+                + 'button[aria-label="选择工作区"]',
+              )].find(element => element instanceof HTMLButtonElement
+                && element.getClientRects().length > 0)
+              const workspaceButtonRect = workspaceButton instanceof HTMLButtonElement
+                ? workspaceButton.getBoundingClientRect()
+                : null
+              window.__OH_DSH_SMOKE_WORKSPACE_BUTTON__ = workspaceButtonRect !== null
+                ? {
+                  expanded: workspaceButton.getAttribute('aria-expanded') === 'true',
+                  height: workspaceButtonRect.height,
+                  width: workspaceButtonRect.width,
+                  x: workspaceButtonRect.x,
+                  y: workspaceButtonRect.y,
+                }
+                : null
+              const directoryDialogOpen = [...document.querySelectorAll('[role="dialog"]')]
+                .some(dialog => /^(Select Workspace Directory|选择工作区目录)$/i.test(
+                  dialog.querySelector('h2')?.textContent?.trim() ?? '',
+                ))
+              if (workspaceButton instanceof HTMLButtonElement
+                && workspaceButton.getAttribute('aria-expanded') !== 'true'
+                && !directoryDialogOpen
+                && Date.now() - (window.__OH_DSH_SMOKE_WORKSPACE_REQUESTED_AT__ ?? 0) > 500) {
+                window.__OH_DSH_SMOKE_WORKSPACE_REQUESTED_AT__ = Date.now()
+                window.__OH_DSH_SMOKE_WORKSPACE_REQUEST_COUNT__ =
+                  (window.__OH_DSH_SMOKE_WORKSPACE_REQUEST_COUNT__ ?? 0) + 1
+                window.__OH_DSH_SMOKE_WORKSPACE_BUTTON_REQUESTED__ = true
+                workspaceButton.focus()
+                workspaceButton.click()
+              }
               workspaceTrigger = [...document.querySelectorAll(
                 '[data-composer-card] textarea[aria-label="Choose workspace"], '
                 + '[data-composer-card] textarea[aria-label="选择工作区"]',
               )].find(element => element instanceof HTMLTextAreaElement
                 && element.getClientRects().length > 0)
               if (workspaceTrigger instanceof HTMLTextAreaElement
+                && !directoryDialogOpen
                 && Date.now() - (window.__OH_DSH_SMOKE_WORKSPACE_REQUESTED_AT__ ?? 0) > 500) {
                 window.__OH_DSH_SMOKE_WORKSPACE_REQUESTED_AT__ = Date.now()
                 window.__OH_DSH_SMOKE_WORKSPACE_REQUEST_COUNT__ =
@@ -220,6 +254,9 @@ void app.whenReady().then(async () => {
             seen: window.__OH_DSH_SMOKE_VISION_SEEN__ === true,
             workspaceOpenCount: window.__OH_DSH_SMOKE_WORKSPACE_OPEN_COUNT__ ?? 0,
             workspaceRequestCount: window.__OH_DSH_SMOKE_WORKSPACE_REQUEST_COUNT__ ?? 0,
+            workspaceButton: window.__OH_DSH_SMOKE_WORKSPACE_BUTTON__ ?? null,
+            workspaceButtonRequested:
+              window.__OH_DSH_SMOKE_WORKSPACE_BUTTON_REQUESTED__ === true,
             workspaceTrigger: workspaceTrigger instanceof HTMLTextAreaElement
               ? (() => {
                 const rect = workspaceTrigger.getBoundingClientRect()
@@ -308,11 +345,15 @@ void app.whenReady().then(async () => {
     })()`)
       if (state.vision.workspaceTrigger !== null
         && process.platform === 'darwin'
+        && !state.body.includes('Select Workspace Directory')
+        && !state.body.includes('选择工作区目录')
+        && Date.now() - lastWorkspaceInputAt > 500
         && window.isDestroyed() === false) {
-        const trigger = state.vision.workspaceTrigger
+        const trigger = state.vision.workspaceButton ?? state.vision.workspaceTrigger
         const x = trigger.x + trigger.width / 2
         const y = trigger.y + trigger.height / 2
         if (Number.isFinite(x) && Number.isFinite(y)) {
+          lastWorkspaceInputAt = Date.now()
           window.show()
           window.focus()
           window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'ENTER' })
