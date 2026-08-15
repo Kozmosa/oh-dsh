@@ -392,10 +392,18 @@ try {
       })
     })
   }
-  rmSync(smokeRoot, {
-    recursive: true,
-    force: true,
-    maxRetries: 10,
-    retryDelay: 250,
-  })
+  try {
+    rmSync(smokeRoot, {
+      recursive: true,
+      force: true,
+      maxRetries: 40,
+      retryDelay: 500,
+    })
+  } catch (error) {
+    const code = error !== null && typeof error === 'object' && 'code' in error
+      ? error.code
+      : undefined
+    if (process.platform !== 'win32' || code !== 'EPERM') throw error
+    console.warn(`Leaving Windows smoke temp root for runner cleanup: ${smokeRoot}`)
+  }
 }

@@ -44,6 +44,8 @@ void app.whenReady().then(async () => {
   const startedAt = Date.now()
   let navigationReadyAt = null
   let settled = false
+  let lastWorkspaceInputAt = 0
+  let workspaceInputCount = 0
 
   const settle = error => {
     if (settled) return
@@ -127,6 +129,7 @@ void app.whenReady().then(async () => {
               }
             }
           }
+          let workspaceTrigger = null
           if (window.__OH_DSH_SMOKE_VISION_REQUESTED__ !== true) {
             const textarea = [...document.querySelectorAll(
               '[data-composer-card] textarea:not(:disabled):not([readonly])',
@@ -146,39 +149,11 @@ void app.whenReady().then(async () => {
               window.__OH_DSH_SMOKE_VISION_REQUESTED__ = true
               textarea.dispatchEvent(paste)
             } else {
-              const workspaceTrigger = [...document.querySelectorAll(
+              workspaceTrigger = [...document.querySelectorAll(
                 '[data-composer-card] textarea[aria-label="Choose workspace"], '
                 + '[data-composer-card] textarea[aria-label="选择工作区"]',
               )].find(element => element instanceof HTMLTextAreaElement
                 && element.getClientRects().length > 0)
-              if (workspaceTrigger instanceof HTMLTextAreaElement
-                && Date.now() - (window.__OH_DSH_SMOKE_WORKSPACE_REQUESTED_AT__ ?? 0) > 500) {
-                window.__OH_DSH_SMOKE_WORKSPACE_REQUESTED_AT__ = Date.now()
-                window.__OH_DSH_SMOKE_WORKSPACE_REQUEST_COUNT__ =
-                  (window.__OH_DSH_SMOKE_WORKSPACE_REQUEST_COUNT__ ?? 0) + 1
-                workspaceTrigger.focus()
-                workspaceTrigger.dispatchEvent(new PointerEvent('pointerdown', {
-                  bubbles: true,
-                  cancelable: true,
-                  pointerType: 'mouse',
-                }))
-                workspaceTrigger.dispatchEvent(new MouseEvent('mousedown', {
-                  bubbles: true,
-                  cancelable: true,
-                  view: window,
-                }))
-                workspaceTrigger.dispatchEvent(new PointerEvent('pointerup', {
-                  bubbles: true,
-                  cancelable: true,
-                  pointerType: 'mouse',
-                }))
-                workspaceTrigger.dispatchEvent(new MouseEvent('mouseup', {
-                  bubbles: true,
-                  cancelable: true,
-                  view: window,
-                }))
-                workspaceTrigger.click()
-              }
               const directoryDialog = [...document.querySelectorAll('[role="dialog"]')]
                 .find(dialog => /^(Select Workspace Directory|选择工作区目录)$/i.test(
                   dialog.querySelector('h2')?.textContent?.trim() ?? '',
@@ -209,6 +184,19 @@ void app.whenReady().then(async () => {
             seen: window.__OH_DSH_SMOKE_VISION_SEEN__ === true,
             workspaceOpenCount: window.__OH_DSH_SMOKE_WORKSPACE_OPEN_COUNT__ ?? 0,
             workspaceRequestCount: window.__OH_DSH_SMOKE_WORKSPACE_REQUEST_COUNT__ ?? 0,
+            workspaceTrigger: workspaceTrigger instanceof HTMLTextAreaElement
+              ? (() => {
+                const rect = workspaceTrigger.getBoundingClientRect()
+                return rect.width > 0 && rect.height > 0
+                  ? {
+                    height: rect.height,
+                    width: rect.width,
+                    x: rect.x,
+                    y: rect.y,
+                  }
+                  : null
+              })()
+              : null,
           }
         })(),
         navigation: (() => {
@@ -282,6 +270,35 @@ void app.whenReady().then(async () => {
         webReady: document.title === 'Oh-DSH Web',
       }
     })()`)
+      if (state.vision.workspaceTrigger !== null
+        && Date.now() - lastWorkspaceInputAt > 500
+        && window.isDestroyed() === false) {
+        const trigger = state.vision.workspaceTrigger
+        const x = trigger.x + trigger.width / 2
+        const y = trigger.y + trigger.height / 2
+        if (Number.isFinite(x) && Number.isFinite(y)) {
+          lastWorkspaceInputAt = Date.now()
+          workspaceInputCount += 1
+          window.show()
+          window.focus()
+          window.webContents.sendInputEvent({ type: 'mouseMove', x, y })
+          window.webContents.sendInputEvent({
+            button: 'left',
+            clickCount: 1,
+            type: 'mouseDown',
+            x,
+            y,
+          })
+          window.webContents.sendInputEvent({
+            button: 'left',
+            clickCount: 1,
+            type: 'mouseUp',
+            x,
+            y,
+          })
+          state.vision.workspaceRequestCount = workspaceInputCount
+        }
+      }
       if (state.ready === true
         && state.navigation !== null
         && state.navigation.collapsed === false
