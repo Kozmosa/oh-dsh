@@ -164,6 +164,26 @@ void app.whenReady().then(async () => {
                   code: 'Enter',
                   key: 'Enter',
                 }))
+                workspaceTrigger.dispatchEvent(new PointerEvent('pointerdown', {
+                  bubbles: true,
+                  cancelable: true,
+                  pointerType: 'mouse',
+                }))
+                workspaceTrigger.dispatchEvent(new MouseEvent('mousedown', {
+                  bubbles: true,
+                  cancelable: true,
+                  view: window,
+                }))
+                workspaceTrigger.dispatchEvent(new PointerEvent('pointerup', {
+                  bubbles: true,
+                  cancelable: true,
+                  pointerType: 'mouse',
+                }))
+                workspaceTrigger.dispatchEvent(new MouseEvent('mouseup', {
+                  bubbles: true,
+                  cancelable: true,
+                  view: window,
+                }))
                 workspaceTrigger.dispatchEvent(new MouseEvent('click', {
                   bubbles: true,
                   cancelable: true,
@@ -286,6 +306,34 @@ void app.whenReady().then(async () => {
         webReady: document.title === 'Oh-DSH Web',
       }
     })()`)
+      if (state.vision.workspaceTrigger !== null
+        && process.platform === 'darwin'
+        && window.isDestroyed() === false) {
+        const trigger = state.vision.workspaceTrigger
+        const x = trigger.x + trigger.width / 2
+        const y = trigger.y + trigger.height / 2
+        if (Number.isFinite(x) && Number.isFinite(y)) {
+          window.show()
+          window.focus()
+          window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'ENTER' })
+          window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'ENTER' })
+          window.webContents.sendInputEvent({ type: 'mouseMove', x, y })
+          window.webContents.sendInputEvent({
+            button: 'left',
+            clickCount: 1,
+            type: 'mouseDown',
+            x,
+            y,
+          })
+          window.webContents.sendInputEvent({
+            button: 'left',
+            clickCount: 1,
+            type: 'mouseUp',
+            x,
+            y,
+          })
+        }
+      }
       if (state.ready === true
         && state.navigation !== null
         && state.navigation.collapsed === false
