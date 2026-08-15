@@ -44,8 +44,6 @@ void app.whenReady().then(async () => {
   const startedAt = Date.now()
   let navigationReadyAt = null
   let settled = false
-  let lastWorkspaceInputAt = 0
-  let workspaceInputCount = 0
 
   const settle = error => {
     if (settled) return
@@ -154,6 +152,24 @@ void app.whenReady().then(async () => {
                 + '[data-composer-card] textarea[aria-label="选择工作区"]',
               )].find(element => element instanceof HTMLTextAreaElement
                 && element.getClientRects().length > 0)
+              if (workspaceTrigger instanceof HTMLTextAreaElement
+                && Date.now() - (window.__OH_DSH_SMOKE_WORKSPACE_REQUESTED_AT__ ?? 0) > 500) {
+                window.__OH_DSH_SMOKE_WORKSPACE_REQUESTED_AT__ = Date.now()
+                window.__OH_DSH_SMOKE_WORKSPACE_REQUEST_COUNT__ =
+                  (window.__OH_DSH_SMOKE_WORKSPACE_REQUEST_COUNT__ ?? 0) + 1
+                workspaceTrigger.focus()
+                workspaceTrigger.dispatchEvent(new KeyboardEvent('keydown', {
+                  bubbles: true,
+                  cancelable: true,
+                  code: 'Enter',
+                  key: 'Enter',
+                }))
+                workspaceTrigger.dispatchEvent(new MouseEvent('click', {
+                  bubbles: true,
+                  cancelable: true,
+                  view: window,
+                }))
+              }
               const directoryDialog = [...document.querySelectorAll('[role="dialog"]')]
                 .find(dialog => /^(Select Workspace Directory|选择工作区目录)$/i.test(
                   dialog.querySelector('h2')?.textContent?.trim() ?? '',
@@ -270,35 +286,6 @@ void app.whenReady().then(async () => {
         webReady: document.title === 'Oh-DSH Web',
       }
     })()`)
-      if (state.vision.workspaceTrigger !== null
-        && Date.now() - lastWorkspaceInputAt > 500
-        && window.isDestroyed() === false) {
-        const trigger = state.vision.workspaceTrigger
-        const x = trigger.x + trigger.width / 2
-        const y = trigger.y + trigger.height / 2
-        if (Number.isFinite(x) && Number.isFinite(y)) {
-          lastWorkspaceInputAt = Date.now()
-          workspaceInputCount += 1
-          window.show()
-          window.focus()
-          window.webContents.sendInputEvent({ type: 'mouseMove', x, y })
-          window.webContents.sendInputEvent({
-            button: 'left',
-            clickCount: 1,
-            type: 'mouseDown',
-            x,
-            y,
-          })
-          window.webContents.sendInputEvent({
-            button: 'left',
-            clickCount: 1,
-            type: 'mouseUp',
-            x,
-            y,
-          })
-          state.vision.workspaceRequestCount = workspaceInputCount
-        }
-      }
       if (state.ready === true
         && state.navigation !== null
         && state.navigation.collapsed === false
