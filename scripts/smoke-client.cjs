@@ -44,7 +44,6 @@ void app.whenReady().then(async () => {
   const startedAt = Date.now()
   let navigationReadyAt = null
   let settled = false
-  let lastWorkspaceInputAt = 0
 
   const settle = error => {
     if (settled) return
@@ -358,39 +357,6 @@ void app.whenReady().then(async () => {
         webReady: document.title === 'Oh-DSH Web',
       }
     })()`)
-      if (state.vision.workspaceTrigger !== null
-        && process.platform === 'darwin'
-        && !state.body.includes('Select Workspace Directory')
-        && !state.body.includes('选择工作区目录')
-        && state.vision.workspaceButton?.expanded !== true
-        && Date.now() - lastWorkspaceInputAt > 500
-        && window.isDestroyed() === false) {
-        const trigger = state.vision.workspaceButton ?? state.vision.workspaceTrigger
-        const x = trigger.x + trigger.width / 2
-        const y = trigger.y + trigger.height / 2
-        if (Number.isFinite(x) && Number.isFinite(y)) {
-          lastWorkspaceInputAt = Date.now()
-          window.show()
-          window.focus()
-          window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'ENTER' })
-          window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'ENTER' })
-          window.webContents.sendInputEvent({ type: 'mouseMove', x, y })
-          window.webContents.sendInputEvent({
-            button: 'left',
-            clickCount: 1,
-            type: 'mouseDown',
-            x,
-            y,
-          })
-          window.webContents.sendInputEvent({
-            button: 'left',
-            clickCount: 1,
-            type: 'mouseUp',
-            x,
-            y,
-          })
-        }
-      }
       if (state.ready === true
         && state.navigation !== null
         && state.navigation.collapsed === false
