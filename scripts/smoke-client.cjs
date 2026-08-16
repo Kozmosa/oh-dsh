@@ -180,6 +180,19 @@ void app.whenReady().then(async () => {
                 workspaceButton.focus()
                 workspaceButton.click()
               }
+              const addWorkspace = [...document.querySelectorAll('[role="menuitem"], button')]
+                .find(element => /^(Add workspace|添加工作区)(?:…|\.\.\.)?$/i.test(
+                  (element.textContent ?? '').trim(),
+                ) && element.getClientRects().length > 0)
+              if (addWorkspace instanceof HTMLElement
+                && !directoryDialogOpen
+                && Date.now() - (window.__OH_DSH_SMOKE_WORKSPACE_REQUESTED_AT__ ?? 0) > 500) {
+                window.__OH_DSH_SMOKE_WORKSPACE_REQUESTED_AT__ = Date.now()
+                window.__OH_DSH_SMOKE_WORKSPACE_REQUEST_COUNT__ =
+                  (window.__OH_DSH_SMOKE_WORKSPACE_REQUEST_COUNT__ ?? 0) + 1
+                window.__OH_DSH_SMOKE_WORKSPACE_ADD_REQUESTED__ = true
+                addWorkspace.click()
+              }
               workspaceTrigger = [...document.querySelectorAll(
                 '[data-composer-card] textarea[aria-label="Choose workspace"], '
                 + '[data-composer-card] textarea[aria-label="选择工作区"]',
@@ -257,6 +270,8 @@ void app.whenReady().then(async () => {
             workspaceButton: window.__OH_DSH_SMOKE_WORKSPACE_BUTTON__ ?? null,
             workspaceButtonRequested:
               window.__OH_DSH_SMOKE_WORKSPACE_BUTTON_REQUESTED__ === true,
+            workspaceAddRequested:
+              window.__OH_DSH_SMOKE_WORKSPACE_ADD_REQUESTED__ === true,
             workspaceTrigger: workspaceTrigger instanceof HTMLTextAreaElement
               ? (() => {
                 const rect = workspaceTrigger.getBoundingClientRect()
@@ -347,6 +362,7 @@ void app.whenReady().then(async () => {
         && process.platform === 'darwin'
         && !state.body.includes('Select Workspace Directory')
         && !state.body.includes('选择工作区目录')
+        && state.vision.workspaceButton?.expanded !== true
         && Date.now() - lastWorkspaceInputAt > 500
         && window.isDestroyed() === false) {
         const trigger = state.vision.workspaceButton ?? state.vision.workspaceTrigger
