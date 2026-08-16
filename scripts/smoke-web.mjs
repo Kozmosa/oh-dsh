@@ -83,6 +83,11 @@ const runtimeEnvironment = {
   DSH_OH_WEB_DATA: webData,
   DSH_OH_WEB_PROFILE: WEB_PROFILE,
   DSH_OH_WEB_VERSION: 'smoke',
+  // Keep the packaged smoke deterministic on macOS and Windows. The adaptive
+  // directory picker otherwise selects the native OS chooser on those hosts,
+  // which cannot be driven by this headless browser client. SSH mode selects
+  // the in-app browse flow while exercising the same workspace contract.
+  SSH_CONNECTION: 'oh-dsh-smoke',
   PATH: runtimeSearchPath(paths),
 }
 
